@@ -1,0 +1,101 @@
+#!/usr/bin/python
+
+# Creates new Django project using template
+
+import os
+import optparse
+import subprocess
+
+PROJECT_TEMPLATE_REPO = '/home/xaralis/workspace/project_tools/project.git'
+
+def main():
+    usage = "usage: %prog project_name [options]"
+    parser = optparse.OptionParser(usage)
+    parser.add_option("-d", "--domain", dest="domain",
+                    action="store",
+                    type="string",
+                    help="domain name to use (e.g.: www.project.cz)")
+    parser.add_option("-p", "--path", dest="path",
+                    action="store",
+                    type="string",
+                    default=os.getcwd(),
+                    help="destination, where to put the project (e.g.: /home/user/workspace/project)")
+    parser.add_option("-r", "--create-repo", dest="create_repo",
+                    action="store_false",
+                    default=True,
+                    help="create GIT repository in new project and do initial commit")
+    options, args = parser.parse_args()
+    
+    if len(args) != 1:
+        print "Missing project name"
+        parser.print_usage()
+        return 1
+    
+    project = args[0]
+    domain, path = options.domain, options.path
+ 
+    if domain is None:
+        domain = project
+        
+    if path == os.getcwd():
+        path = os.path.join(path, project)
+        
+    work_path = os.path.join(path, '.tmp')
+        
+    env = {'project': project, 'project_domain': domain, 'path': os.path.join('/', 'srv', project)}
+
+    # cleanup
+    subprocess.call(['rm', '-rf', work_path])    
+
+    print "Creating target directory ..."
+    # create target directory
+    subprocess.call(['mkdir', '-p', path])
+    # create work directory
+    subprocess.call(['mkdir', '-p', work_path])
+    # clone project template from repository
+    subprocess.call(['git', 'clone', PROJECT_TEMPLATE_REPO, work_path, '-q'])
+    subprocess.call(['rm', '-rf', os.path.join(work_path, '.git')])    
+
+    replacements = {
+        '%(project)s': env['project'],
+        '%(project_domain)s': env['project_domain'],
+        '%(path)s': env['path']
+    }
+
+    print "Copying files ..."
+    for root, dirs, files in os.walk(work_path):
+        rp = root % env
+        
+        for dir in dirs:
+            subprocess.call(['mkdir', '-p', os.path.join(rp, dir % env)])
+            
+        for file in files:
+            old_file_path = os.path.join(root, file)
+            new_file_path = os.path.join(rp, file % env)
+            fin = open(old_file_path, 'r')
+            fout = open(new_file_path, 'w')
+            
+            content = fin.read()
+            if not '/fab/' in new_file_path:
+                for pattern, value in replacements.items():
+                    content = content.replace(pattern, value)
+            
+            fout.write(content)
+            fout.close()
+            fin.close()
+            
+    print "Cleaning up ..."
+    # copy project files and get rid of work dir
+    subprocess.call(['cp -r %s %s' % (os.path.join(work_path, project, '*'), path)], shell=True)  
+    subprocess.call(['rm', '-rf', work_path])    
+        
+    if options.create_repo:
+        print "Creating git repository and initial commit ..."
+        subprocess.call(['git', 'init', path, '-q'])
+        subprocess.call(['cd %s; git add .; git commit -q --no-status -a -m "Initial commit"' % path], shell=True)
+        
+    print "Done."
+
+if __name__ == '__main__':
+    main()
+    
