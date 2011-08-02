@@ -7,13 +7,13 @@ import os
 import optparse
 import subprocess
 
-PROJECT_TEMPLATE_REPO = 'ssh://%(user)s@sources.fragaria.cz:22222/DATA/projects/fraga-py/GIT/project.git'
-
 if sys.platform == "win32":
     cmd = "USERNAME"
 elif sys.platform == "linux2":
     cmd = "USER"
 logged_user = os.getenv(cmd)
+
+PROJECT_TEMPLATE_REPO = 'ssh://%(user)s@sources.fragaria.cz:22222/DATA/projects/fraga-py/GIT/project.git' % {'user': logged_user}
 
 def main():
     usage = "usage: %prog project_name [options]"
@@ -27,15 +27,15 @@ def main():
                     type="string",
                     default=os.getcwd(),
                     help="destination, where to put the project (e.g.: /home/user/workspace/project)")
-    parser.add_option("-r", "--create-repo", dest="create_repo",
+    parser.add_option("-c", "--create-repo", dest="create_repo",
                     action="store_false",
                     default=True,
                     help="create GIT repository in new project and do initial commit")
     parser.add_option("-r", "--repository", dest="repo",
                     action="store",
                     type="string",
-                    default=PROJECT_TEMPLATE_REPO % {'user': logged_user},
-                    help="username to use when connecting to the Fragaria sources repository")
+                    default=PROJECT_TEMPLATE_REPO,
+                    help="address of repository to clone project template from")
     options, args = parser.parse_args()
     
     if len(args) != 1:
@@ -45,7 +45,7 @@ def main():
     
     project = args[0]
     domain, path, repo = options.domain, options.path, options.repo
- 
+    
     if domain is None:
         domain = project
         
@@ -55,7 +55,7 @@ def main():
     work_path = os.path.join(path, '.tmp')
         
     env = {'project': project, 'project_domain': domain,
-        'path': os.path.join('/', 'srv', project), 'user': logged_user}
+        'path': os.path.join('/', 'srv', project)}
 
     # cleanup
     subprocess.call(['rm', '-rf', work_path])    
@@ -66,7 +66,7 @@ def main():
     # create work directory
     subprocess.call(['mkdir', '-p', work_path])
     # clone project template from repository
-    subprocess.call(['git', 'clone', repo, '-q'])
+    subprocess.call(['git', 'clone', repo, work_path, '-q'])
     subprocess.call(['rm', '-rf', os.path.join(work_path, '.git')])    
 
     replacements = {
