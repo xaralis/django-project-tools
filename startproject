@@ -14,6 +14,7 @@ elif sys.platform == "linux2":
 logged_user = os.getenv(cmd)
 
 PROJECT_TEMPLATE_REPO = 'ssh://%(user)s@sources.fragaria.cz:22222/DATA/projects/fraga-py/GIT/project.git' % {'user': logged_user}
+PROJECT_TEMPLATE_DEFAULT_BRANCH = 'master'
 
 def main():
     usage = "usage: %prog project_name [options]"
@@ -36,6 +37,11 @@ def main():
                     type="string",
                     default=PROJECT_TEMPLATE_REPO,
                     help="address of repository to clone project template from")
+    parser.add_option("-b", "--branch", dest="branch",
+                    action="store",
+                    type="string",
+                    default=PROJECT_TEMPLATE_DEFAULT_BRANCH,
+                    help="branch of project template to use")
     options, args = parser.parse_args()
     
     if len(args) != 1:
@@ -44,7 +50,7 @@ def main():
         return 1
     
     project = args[0]
-    domain, path, repo = options.domain, options.path, options.repo
+    domain, path, repo, branch = options.domain, options.path, options.repo, options.branch
     
     if domain is None:
         domain = project
@@ -66,7 +72,7 @@ def main():
     # create work directory
     subprocess.call(['mkdir', '-p', work_path])
     # clone project template from repository
-    subprocess.call(['git', 'clone', repo, work_path, '-q'])
+    subprocess.call(['git', 'clone', repo, work_path, '-q', '-b', branch])
     subprocess.call(['rm', '-rf', os.path.join(work_path, '.git')])    
 
     replacements = {
