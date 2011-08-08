@@ -72,7 +72,10 @@ def main():
     # create work directory
     subprocess.call(['mkdir', '-p', work_path])
     # clone project template from repository
-    subprocess.call(['git', 'clone', repo, work_path, '-q', '-b', branch])
+    subprocess.call(['git clone -q %s %s' % (repo, work_path)], shell=True)
+    if branch != PROJECT_TEMPLATE_DEFAULT_BRANCH:
+        subprocess.call(['cd %s; git checkout -b %s origin/%s' % (work_path, branch, branch)], shell=True)
+    
     subprocess.call(['rm', '-rf', os.path.join(work_path, '.git')])    
 
     replacements = {
