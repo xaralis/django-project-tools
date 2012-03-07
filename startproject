@@ -98,10 +98,9 @@ def main():
             fout = open(new_file_path, 'w')
             
             content = fin.read()
-            if not '/fab/' in new_file_path:
-                for pattern, value in replacements.items():
-                    content = content.replace(pattern, value)
-            
+            for pattern, value in replacements.items():
+                content = content.replace(pattern, value)
+        
             fout.write(content)
             fout.close()
             fin.close()
