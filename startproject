@@ -7,13 +7,7 @@ import os
 import optparse
 import subprocess
 
-if sys.platform == "win32":
-    cmd = "USERNAME"
-elif sys.platform == "linux2":
-    cmd = "USER"
-logged_user = os.getenv(cmd)
-
-PROJECT_TEMPLATE_REPO = 'ssh://%(user)s@sources.fragaria.cz:22222/DATA/projects/fraga-py/GIT/project.git' % {'user': logged_user}
+PROJECT_TEMPLATE_REPO = 'git://github.com/xaralis/django-project-template.git'
 PROJECT_TEMPLATE_DEFAULT_BRANCH = 'master'
 
 def main():
